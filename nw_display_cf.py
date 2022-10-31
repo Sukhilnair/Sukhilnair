@@ -3,6 +3,7 @@ import json
 import sys
 import os
 import re
+import serial
 from datetime import timedelta
 import time
 import requests
@@ -12,19 +13,18 @@ def event_json_based_hw_control(event_json, enable_relay_flag, enable_gpio_flag,
     try:
         for tmp in event_json['event']['tags']:
             if tmp['key'] == 'lp':
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                host ="192.168.1.96"
-                port =65432
-                s.connect((host,port))
-                inputString = tmp['value']
+              ser=serial.Serial("/dev/ttyUSB0",9600)
+              if not ser.isOpen():
+                ser.open()
+                print('Serial port is open',ser.isOpen())
+                inputString = "002DIS="+tmp['value']+"<CR><LF>"
                 outputString = inputString.encode('utf-8').hex()
+                reuslt = r'\x'.join(outputString[i:i+2] for i in range(0, len(outputString), 2))
                 def ts(str):
-                   send = ("30 30 31 44 49 53 3D {} 0D 0A".format(outputString))
-                   s.send(send.encode())
-                   print (send)
-                   data = ''
-                   data = s.recv(1024).decode()
-                   print (data)
+                   #command = b"\x30\x30\x32\x44\x49\x53\x3D\x{}\x0D\x0A.reuslt"
+                   ser.write(reuslt)
+                   print(reuslt)
     except Exception as err:
         print("Error while triggering relay : ", err)
-    return event_json
+    return
+
